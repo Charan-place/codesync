@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { registerUser, googleLoginUrl } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
+import { getErrorMessage } from '../utils/errors';
 import AuthLayout from '../components/ui/AuthLayout';
 import { Field, Divider } from '../components/ui/Input';
 import Button from '../components/ui/Button';
@@ -28,8 +29,8 @@ export default function Signup() {
       setAuth(user, token);
       toast.success(`Welcome to CodeSync, ${user.name}!`);
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Sign up failed');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Sign up failed'));
     } finally {
       setLoading(false);
     }

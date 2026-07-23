@@ -1,11 +1,12 @@
 import { Response } from 'express';
 import bcrypt from 'bcryptjs';
 import validator from 'validator';
-import User from '../models/User';
+import User, { IUser } from '../models/User';
 import { signToken } from '../utils/token';
 import { AuthedRequest } from '../middleware/auth';
+import { env } from '../config/env';
 
-function publicUser(user: any) {
+function publicUser(user: IUser) {
   return { id: user._id, name: user.name, email: user.email, avatarUrl: user.avatarUrl };
 }
 
@@ -53,9 +54,9 @@ export async function me(req: AuthedRequest, res: Response) {
   res.json({ user: publicUser(user) });
 }
 
-export async function googleCallbackSuccess(req: AuthedRequest, res: Response) {
-  const user: any = req.user;
+export function googleCallbackSuccess(req: AuthedRequest, res: Response) {
+  const user = req.user as IUser;
   const token = signToken({ userId: user.id });
-  const redirectUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/callback?token=${token}`;
+  const redirectUrl = `${env.clientUrl}/auth/callback?token=${token}`;
   res.redirect(redirectUrl);
 }

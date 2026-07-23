@@ -21,7 +21,7 @@ export function requireAuth(req: AuthedRequest, res: Response, next: NextFunctio
 }
 
 // Attaches userId if a valid token is present, but doesn't reject guests.
-export function optionalAuth(req: AuthedRequest, res: Response, next: NextFunction) {
+export function optionalAuth(req: AuthedRequest, _res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (header?.startsWith('Bearer ')) {
     try {

@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import { Server, Socket } from 'socket.io';
 import * as Y from 'yjs';
 import Room from '../models/Room';

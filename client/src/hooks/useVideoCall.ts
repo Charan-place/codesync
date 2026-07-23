@@ -3,6 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import Peer from 'simple-peer';
 import { Socket } from 'socket.io-client';
 
+// simple-peer's `export = SimplePeer` shape doesn't play well with named type
+// imports under this bundler, so these are derived from the runtime value's
+// own type instead of reaching for `any`.
+type PeerInstance = InstanceType<typeof Peer>;
+type PeerSignalData = Parameters<PeerInstance['signal']>[0];
+
 // STUN alone only works when at least one side has a directly reachable
 // (non-symmetric-NAT) connection. On most real-world networks (home wifi,
 // mobile data, corporate NAT) two browsers can't reach each other directly,
@@ -24,7 +30,7 @@ export function useVideoCall(socket: Socket | null, slug: string, inCall: boolea
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
   const [mediaError, setMediaError] = useState<string | null>(null);
-  const peersRef = useRef<Record<string, any>>({});
+  const peersRef = useRef<Record<string, PeerInstance>>({});
 
   useEffect(() => {
     if (!socket || !inCall) return;
@@ -57,7 +63,7 @@ export function useVideoCall(socket: Socket | null, slug: string, inCall: boolea
       if (!stream) return;
       createPeer(socketId, true);
     };
-    const onSignal = ({ fromSocketId, signal }: { fromSocketId: string; signal: any }) => {
+    const onSignal = ({ fromSocketId, signal }: { fromSocketId: string; signal: PeerSignalData }) => {
       let peer = peersRef.current[fromSocketId];
       if (!peer) peer = createPeer(fromSocketId, false);
       peer.signal(signal);

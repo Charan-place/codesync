@@ -1,11 +1,11 @@
 import { Response } from 'express';
 import bcrypt from 'bcryptjs';
-import Room from '../models/Room';
+import Room, { IRoom } from '../models/Room';
 import { generateSlug } from '../utils/slug';
 import { AuthedRequest } from '../middleware/auth';
 import { env } from '../config/env';
 
-function publicRoom(room: any) {
+function publicRoom(room: IRoom) {
   return {
     slug: room.slug,
     title: room.title,

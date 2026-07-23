@@ -10,7 +10,10 @@ export interface ExecResult {
 // Runs untrusted JS in a fresh V8 context with no Node globals (no require,
 // process, fs, network). Captures console output, enforces a wall-clock
 // timeout, and truncates output to keep responses small.
-export async function runSandboxed(code: string): Promise<ExecResult> {
+// Not `async` — everything here (V8's vm module) is synchronous; the return
+// type stays a Promise so this can still be dropped in wherever `await`
+// makes the call site easier to read.
+export function runSandboxed(code: string): Promise<ExecResult> {
   const logs: string[] = [];
   const errors: string[] = [];
   const sandboxConsole = {
@@ -24,19 +27,20 @@ export async function runSandboxed(code: string): Promise<ExecResult> {
   try {
     const script = new vm.Script(code, { filename: 'user-code.js' });
     script.runInContext(context, { timeout: env.codeExecTimeoutMs });
-  } catch (err: any) {
-    if (err?.message?.includes('Script execution timed out')) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes('Script execution timed out')) {
       timedOut = true;
     } else {
-      errors.push(err?.message || String(err));
+      errors.push(message);
     }
   }
 
-  return {
+  return Promise.resolve({
     stdout: truncate(logs.join('\n')),
     stderr: truncate(errors.join('\n')),
     timedOut,
-  };
+  });
 }
 
 function safeStringify(v: unknown): string {

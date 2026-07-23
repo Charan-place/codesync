@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import mongoose, { Schema, Document } from 'mongoose';
 
 export type RoomVisibility = 'public-link' | 'password' | 'private';

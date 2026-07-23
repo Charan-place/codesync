@@ -1,6 +1,7 @@
 import { forwardRef } from 'react';
-import type { ButtonHTMLAttributes } from 'react';
+import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
+import type { HTMLMotionProps } from 'framer-motion';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -20,10 +21,11 @@ const sizeClasses: Record<Size, string> = {
   lg: 'text-base px-6 py-3.5 rounded-xl gap-2.5',
 };
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
   variant?: Variant;
   size?: Size;
   loading?: boolean;
+  children?: ReactNode;
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -36,7 +38,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
         disabled={disabled || loading}
         className={`inline-flex items-center justify-center font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
-        {...(props as any)}
+        {...props}
       >
         {loading && (
           <span className="h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />

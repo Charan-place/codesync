@@ -15,6 +15,7 @@ import type { Room as RoomType } from '../types';
 import Button from '../components/ui/Button';
 import Logo from '../components/ui/Logo';
 import { Field } from '../components/ui/Input';
+import { getErrorMessage } from '../utils/errors';
 
 export default function Room() {
   const { slug = '' } = useParams();
@@ -107,8 +108,8 @@ export default function Room() {
       const code = doc.getText('monaco').toString();
       const result = await executeCode(slug, language, code);
       setOutput(result);
-    } catch (err: any) {
-      setOutput({ stdout: '', stderr: err.response?.data?.error || 'Execution failed' });
+    } catch (err: unknown) {
+      setOutput({ stdout: '', stderr: getErrorMessage(err, 'Execution failed') });
     } finally {
       setRunning(false);
     }

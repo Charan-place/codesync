@@ -1,3 +1,4 @@
+import process from 'node:process';
 import mongoose from 'mongoose';
 import { env } from './env';
 

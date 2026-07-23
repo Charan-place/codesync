@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { loginUser, googleLoginUrl } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
+import { getErrorMessage } from '../utils/errors';
 import AuthLayout from '../components/ui/AuthLayout';
 import { Field, Divider } from '../components/ui/Input';
 import Button from '../components/ui/Button';
@@ -27,8 +28,8 @@ export default function Login() {
       setAuth(user, token);
       toast.success(`Welcome back, ${user.name}!`);
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Log in failed');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Log in failed'));
     } finally {
       setLoading(false);
     }
