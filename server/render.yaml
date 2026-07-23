@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: codesync-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      # All secrets (MONGODB_URI, JWT_SECRET, SESSION_SECRET, GOOGLE_CLIENT_ID/SECRET,
+      # CLIENT_URL, GOOGLE_CALLBACK_URL) must be set manually in the Render dashboard.
+      # See .env.example for the full list of required variables.
