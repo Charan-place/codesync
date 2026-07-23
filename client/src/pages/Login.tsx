@@ -1,9 +1,14 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { loginUser, googleLoginUrl } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
-import { AuthLayout, Field, Divider } from './Signup';
+import AuthLayout from '../components/ui/AuthLayout';
+import { Field, Divider } from '../components/ui/Input';
+import Button from '../components/ui/Button';
+import GoogleButton from '../components/ui/GoogleButton';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -20,6 +25,7 @@ export default function Login() {
     try {
       const { user, token } = await loginUser(email, password);
       setAuth(user, token);
+      toast.success(`Welcome back, ${user.name}!`);
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Log in failed');
@@ -29,21 +35,33 @@ export default function Login() {
   }
 
   return (
-    <AuthLayout title="Log in to CodeSync">
+    <AuthLayout title="Log in to CodeSync" subtitle="Pick up right where you left off.">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Field label="Email" value={email} onChange={setEmail} type="email" />
-        <Field label="Password" value={password} onChange={setPassword} type="password" />
-        {error && <p className="text-sm text-red-400">{error}</p>}
-        <button type="submit" disabled={loading} className="w-full rounded-md bg-brand-600 py-2.5 font-medium hover:bg-brand-700 disabled:opacity-60">
+        <Field label="Email" value={email} onChange={setEmail} type="email" autoComplete="email" />
+        <Field label="Password" value={password} onChange={setPassword} type="password" autoComplete="current-password" />
+        <AnimatePresence>
+          {error && (
+            <motion.p
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="text-sm text-red-400"
+            >
+              {error}
+            </motion.p>
+          )}
+        </AnimatePresence>
+        <Button type="submit" loading={loading} className="w-full">
           {loading ? 'Logging in…' : 'Log in'}
-        </button>
+        </Button>
       </form>
       <Divider />
-      <a href={googleLoginUrl()} className="flex items-center justify-center gap-2 w-full rounded-md border border-slate-700 py-2.5 hover:bg-slate-800">
-        Continue with Google
-      </a>
+      <GoogleButton href={googleLoginUrl()} />
       <p className="mt-6 text-center text-sm text-slate-400">
-        No account yet? <Link to="/signup" className="text-brand-500 hover:underline">Sign up</Link>
+        No account yet?{' '}
+        <Link to="/signup" className="text-brand-400 hover:text-brand-300 transition-colors">
+          Sign up
+        </Link>
       </p>
     </AuthLayout>
   );

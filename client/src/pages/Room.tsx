@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import Editor from '@monaco-editor/react'
 import type { OnMount } from '@monaco-editor/react';
+import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { YjsMonacoBinding } from '../utils/yjsMonacoBinding';
 import { useRoomSocket } from '../hooks/useRoomSocket';
 import { useVideoCall } from '../hooks/useVideoCall';
@@ -10,6 +12,9 @@ import ParticipantsBar from '../components/ParticipantsBar';
 import VideoChat from '../components/VideoChat';
 import { getRoom, verifyRoomPassword, executeCode } from '../api/rooms';
 import type { Room as RoomType } from '../types';
+import Button from '../components/ui/Button';
+import Logo from '../components/ui/Logo';
+import { Field } from '../components/ui/Input';
 
 export default function Room() {
   const { slug = '' } = useParams();
@@ -78,6 +83,15 @@ export default function Room() {
     return () => bindingRef.current?.destroy();
   }, []);
 
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success('Room link copied to clipboard!');
+    } catch {
+      toast.error('Could not copy link.');
+    }
+  }
+
   async function handleRun() {
     if (!RUNNABLE_LANGUAGES.has(language)) {
       setOutput({
@@ -101,24 +115,51 @@ export default function Room() {
   }
 
   if (joinError) {
-    return <div className="min-h-screen flex items-center justify-center text-red-400">{joinError}</div>;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-center px-6">
+        <Logo size="lg" />
+        <p className="text-red-400 mt-4">{joinError}</p>
+        <Link to="/" className="text-sm text-brand-400 hover:text-brand-300 transition-colors">
+          Back to home
+        </Link>
+      </div>
+    );
   }
 
   if (needsPassword && !unlocked) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-6">
-        <form onSubmit={handleUnlock} className="w-full max-w-sm space-y-3">
-          <h1 className="text-lg font-semibold">This room is password-protected</h1>
-          <input
-            type="password"
-            value={passwordInput}
-            onChange={(e) => setPasswordInput(e.target.value)}
-            placeholder="Room password"
-            className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-600"
-          />
-          {passwordError && <p className="text-sm text-red-400">{passwordError}</p>}
-          <button type="submit" className="w-full rounded-md bg-brand-600 py-2 font-medium hover:bg-brand-700">Unlock</button>
-        </form>
+      <div className="min-h-screen flex items-center justify-center px-6 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-600/15 blur-[110px]" />
+        </div>
+        <motion.form
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          onSubmit={handleUnlock}
+          className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-7 shadow-2xl space-y-4"
+        >
+          <div className="flex justify-center mb-2">
+            <Logo />
+          </div>
+          <h1 className="text-lg font-semibold text-center">This room is password-protected</h1>
+          <Field label="Password" value={passwordInput} onChange={setPasswordInput} type="password" />
+          <AnimatePresence>
+            {passwordError && (
+              <motion.p
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="text-sm text-red-400"
+              >
+                {passwordError}
+              </motion.p>
+            )}
+          </AnimatePresence>
+          <Button type="submit" className="w-full">
+            Unlock
+          </Button>
+        </motion.form>
       </div>
     );
   }
@@ -127,20 +168,37 @@ export default function Room() {
   const isEditable = !readOnly;
 
   return (
-    <div className="h-screen flex flex-col">
-      <header className="flex items-center justify-between px-4 py-2 border-b border-slate-800">
-        <div className="flex items-center gap-3">
-          <span className="font-semibold">CodeSync</span>
-          <span className="text-slate-500 text-sm">{room?.title || 'Untitled room'} · /{slug}</span>
-          <span className={`text-xs px-2 py-0.5 rounded-full ${connected ? 'bg-emerald-600/20 text-emerald-400' : 'bg-amber-600/20 text-amber-400'}`}>
+    <div className="h-screen flex flex-col bg-slate-950">
+      <header className="glass flex items-center justify-between px-4 py-2.5 border-b border-white/5 z-10">
+        <div className="flex items-center gap-3 min-w-0">
+          <Link to="/">
+            <Logo size="sm" />
+          </Link>
+          <div className="h-4 w-px bg-slate-700 hidden sm:block" />
+          <span className="text-slate-400 text-sm truncate hidden sm:inline">
+            {room?.title || 'Untitled room'} · /{slug}
+          </span>
+          <span
+            className={`flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full transition-colors ${
+              connected ? 'bg-emerald-600/15 text-emerald-400' : 'bg-amber-600/15 text-amber-400'
+            }`}
+          >
+            <motion.span
+              className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-emerald-400' : 'bg-amber-400'}`}
+              animate={connected ? { opacity: [1, 0.4, 1] } : { opacity: 1 }}
+              transition={{ repeat: Infinity, duration: 2 }}
+            />
             {connected ? 'Connected' : 'Reconnecting…'}
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={handleCopyLink}>
+            Copy link
+          </Button>
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="text-sm rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-600"
+            className="text-sm rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-600 transition-shadow"
           >
             {LANGUAGE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -149,14 +207,14 @@ export default function Room() {
               </option>
             ))}
           </select>
-          <button
+          <Button
+            size="sm"
             onClick={handleRun}
-            disabled={running}
+            loading={running}
             title={!RUNNABLE_LANGUAGES.has(language) ? 'Only JavaScript can be executed right now' : undefined}
-            className="text-sm rounded-md bg-brand-600 px-3 py-1.5 hover:bg-brand-700 disabled:opacity-60"
           >
             {running ? 'Running…' : '▶ Run'}
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -169,16 +227,24 @@ export default function Room() {
             options={{ readOnly: !isEditable, minimap: { enabled: false }, fontSize: 14 }}
             onMount={handleMount}
           />
-          {output && (
-            <div className="h-40 border-t border-slate-800 bg-slate-950 overflow-y-auto p-3 text-sm font-mono">
-              {output.stdout && <pre className="text-slate-200 whitespace-pre-wrap">{output.stdout}</pre>}
-              {output.stderr && <pre className="text-red-400 whitespace-pre-wrap">{output.stderr}</pre>}
-              {!output.stdout && !output.stderr && <span className="text-slate-500">No output</span>}
-            </div>
-          )}
+          <AnimatePresence>
+            {output && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 160, opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                className="border-t border-slate-800 bg-slate-950 overflow-y-auto p-3 text-sm font-mono"
+              >
+                {output.stdout && <pre className="text-slate-200 whitespace-pre-wrap">{output.stdout}</pre>}
+                {output.stderr && <pre className="text-red-400 whitespace-pre-wrap">{output.stderr}</pre>}
+                {!output.stdout && !output.stderr && <span className="text-slate-500">No output</span>}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        <aside className="w-80 flex-shrink-0 border-l border-slate-800 flex flex-col">
+        <aside className="w-80 flex-shrink-0 border-l border-slate-800 flex flex-col bg-slate-950/60">
           <ParticipantsBar participants={participants} self={self} onChangeRole={changeRole} />
           <VideoChat
             inCall={inCall}
