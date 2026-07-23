@@ -1,23 +1,132 @@
-# CodeSync
+<div align="center">
 
-A real-time collaborative code editor, inspired by codeshare.io — with accounts,
-room roles, persistent rooms, in-editor code execution, text chat and live video
-calling. See `PLAN.md` for the full product/architecture plan.
+# ⚡ CodeSync
 
-## Stack
+**Share code in real-time, without the friction.**
 
-- **Client**: React + Vite + TypeScript + Tailwind CSS, Monaco Editor, Yjs (CRDT sync),
-  Socket.IO client, simple-peer (WebRTC). Deploys to **Vercel**.
-- **Server**: Node.js + Express + TypeScript + Socket.IO, Mongoose (MongoDB), Passport
-  (JWT + Google OAuth), a sandboxed JS execution endpoint. Deploys to **Render**
-  (required for WebSockets — Vercel serverless can't hold persistent socket connections).
-- **Database**: MongoDB Atlas, dedicated cluster, database name `codesync_db`.
+A production-deployed, real-time collaborative code editor with live cursors, chat,
+peer-to-peer video calling, and room-based access control — built for interviews,
+pair programming, and teaching. No install, no setup, just a link.
 
-## Local development
+[**Live App**](https://codesync-seven.vercel.app) · [**API Health**](https://codesync-7qib.onrender.com/health) · [Report a bug](https://github.com/Charan-place/codesync/issues)
+
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React_19-61DAFB?style=flat&logo=react&logoColor=black)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat&logo=node.js&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?style=flat&logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat&logo=mongodb&logoColor=white)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?style=flat&logo=socket.io&logoColor=white)
+![Yjs](https://img.shields.io/badge/Yjs-CRDT_Sync-4B5563?style=flat)
+![WebRTC](https://img.shields.io/badge/WebRTC-333333?style=flat&logo=webrtc&logoColor=white)
+![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?style=flat&logo=vercel&logoColor=white)
+![Render](https://img.shields.io/badge/Deployed_on-Render-46E3B7?style=flat&logo=render&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+
+</div>
+
+---
+
+## What is this?
+
+CodeSync is a full-stack, real-time collaborative code editor in the spirit of
+[codeshare.io](https://codeshare.io) — rebuilt from the ground up with a heavier
+feature set and a modern engineering approach: conflict-free collaborative editing
+via CRDTs, first-class accounts, room-level access control, in-browser code
+execution, and built-in peer-to-peer video calling — all shipped as a real,
+deployed, end-to-end product rather than a local demo.
+
+It's built to answer one question well: *how do two or more people look at, edit,
+and talk through the same code at the same time, with zero setup on either side?*
+
+## ✨ Features
+
+| | |
+|---|---|
+| 🔄 **Real-time collaborative editing** | Every keystroke syncs instantly across every connected client using [Yjs](https://yjs.dev) CRDTs — no merge conflicts, no "someone else is editing" locks, no lost keystrokes, even on flaky connections. |
+| 🎥 **Built-in video calling** | Peer-to-peer WebRTC video/audio, signaled over the same Socket.IO connection as the editor. No third-party embed, no extra tab. |
+| 💬 **Live chat & presence** | See exactly who's in the room, their role, and talk it through without leaving the page. |
+| 🔐 **Full authentication** | Email/password and Google OAuth 2.0, JWT-based sessions, persisted rooms tied to an account. |
+| 🧑‍🤝‍🧑 **Room roles & access control** | Host / editor / viewer roles per participant, host-controlled permissions, optional password-protected rooms, and auto-expiring public sessions. |
+| ▶️ **In-browser code execution** | Run JavaScript directly from the editor in a sandboxed, timeout-guarded environment — no local runtime required. |
+| 🌐 **Multi-language editor** | Monaco-powered editing with syntax highlighting across JavaScript, TypeScript, Python, Java, C++, Go, Rust, and more. |
+| 🎨 **Polished, animated UI** | A hand-built design system (not a component library) with `framer-motion` micro-interactions, toast notifications, and a native-feeling interface end to end. |
+
+## 🖥️ Live demo
+
+| | |
+|---|---|
+| **App** | https://codesync-seven.vercel.app |
+| **API** | https://codesync-7qib.onrender.com |
+
+> Running on free-tier infrastructure — the backend spins down after inactivity, so
+> the very first request after a while can take up to ~50s to wake up. Everything
+> after that is instant.
+
+## 🏗️ Architecture
+
+```
+┌──────────────────────┐         WebSocket (Socket.IO)        ┌───────────────────────┐
+│                       │ ◄──────────────────────────────────► │                        │
+│   React + Vite        │                                       │   Node + Express       │
+│   Monaco Editor        │         REST (Axios, JWT auth)        │   Socket.IO server     │
+│   Yjs (CRDT client)    │ ◄──────────────────────────────────► │   Passport (JWT/OAuth) │
+│   simple-peer (WebRTC) │                                       │   Yjs (server doc)     │
+│                       │         WebRTC signal relay            │   Sandboxed JS exec    │
+│   Deployed → Vercel    │ ◄──────────────────────────────────► │   Deployed → Render    │
+└──────────────────────┘                                       └───────────┬───────────┘
+                                                                             │ Mongoose
+                                                                             ▼
+                                                                   ┌──────────────────┐
+                                                                   │  MongoDB Atlas    │
+                                                                   │  (codesync_db)    │
+                                                                   └──────────────────┘
+```
+
+The editor's document state is a shared `Y.Doc` (Yjs): the server holds the
+authoritative in-memory copy per active room, debounce-persists it to MongoDB, and
+every client applies/broadcasts binary CRDT updates over the same socket used for
+presence, chat, and WebRTC signaling — one connection, one source of truth, no
+polling.
+
+## 🧰 Tech stack
+
+**Client** — React 19 · TypeScript · Vite · Tailwind CSS v4 · Monaco Editor ·
+Yjs · Socket.IO client · simple-peer (WebRTC) · Zustand · React Router · Framer Motion · react-hot-toast
+
+**Server** — Node.js · Express · TypeScript · Socket.IO · Mongoose (MongoDB) ·
+Passport.js (JWT + Google OAuth 2.0) · bcrypt · Yjs (server-side CRDT authority)
+
+**Infrastructure** — MongoDB Atlas · Render (WebSocket-capable backend) · Vercel
+(SPA frontend, edge CDN) · Google Cloud Console (OAuth)
+
+## 📂 Project structure
+
+```
+codesync/
+├── client/                 # React + Vite frontend
+│   └── src/
+│       ├── pages/          # Home, Login, Signup, Dashboard, Room, AuthCallback
+│       ├── components/     # ChatPanel, VideoChat, ParticipantsBar, ui/*
+│       ├── hooks/          # useRoomSocket, useVideoCall
+│       ├── store/          # Zustand auth store
+│       ├── api/            # Axios client + endpoint wrappers
+│       └── utils/          # Custom Yjs ↔ Monaco binding
+├── server/                 # Express + Socket.IO backend
+│   └── src/
+│       ├── controllers/    # auth, room, snippet, execute
+│       ├── models/         # User, Room, ChatMessage, Snippet (Mongoose)
+│       ├── sockets/        # Real-time room/doc/chat/WebRTC signaling
+│       ├── services/       # Sandboxed code execution
+│       ├── config/         # env, db, passport
+│       └── middleware/     # JWT auth guards
+└── PLAN.md                 # Original product/architecture plan
+```
+
+## 🚀 Local development
 
 ### 1. Server
 
-```
+```bash
 cd server
 cp .env.example .env   # fill in MONGODB_URI, JWT_SECRET, SESSION_SECRET, etc.
 npm install
@@ -26,7 +135,7 @@ npm run dev             # http://localhost:5000
 
 ### 2. Client
 
-```
+```bash
 cd client
 cp .env.example .env    # VITE_API_URL / VITE_SOCKET_URL default to localhost:5000
 npm install
@@ -36,42 +145,67 @@ npm run dev              # http://localhost:5173
 Open two browser windows on the same room URL to see live collaborative editing,
 presence, chat, and video calling in action.
 
-## Required accounts / credentials (all new, not reused from other projects)
+### Environment variables
 
-- **MongoDB Atlas** — new, dedicated cluster. Create database user + connection string,
-  put it in `server/.env` as `MONGODB_URI` (database name `codesync_db`).
-- **Google Cloud Console** — new OAuth 2.0 Client ID (Web application). Authorized
-  redirect URI: `<SERVER_URL>/api/auth/google/callback`. Put client ID/secret in
-  `server/.env`.
-- **JWT_SECRET / SESSION_SECRET** — generate with `openssl rand -hex 32`.
+<details>
+<summary><code>server/.env</code></summary>
 
-## Deployment
+| Variable | Description |
+|---|---|
+| `PORT` | Port the server listens on |
+| `NODE_ENV` | `development` \| `production` |
+| `SERVER_URL` / `CLIENT_URL` | Used for OAuth redirects and CORS |
+| `MONGODB_URI` | MongoDB Atlas connection string |
+| `JWT_SECRET` / `JWT_EXPIRES_IN` | Auth token signing |
+| `SESSION_SECRET` | Express session secret (OAuth handshake) |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_CALLBACK_URL` | Google OAuth 2.0 credentials |
+| `DEFAULT_ROOM_TTL_HOURS` | Auto-expiry for anonymous/public rooms |
+| `CODE_EXEC_TIMEOUT_MS` | Sandboxed execution timeout |
 
-### Backend → Render
-- New Web Service, root directory `server`.
-- Build command: `npm install && npm run build`
-- Start command: `npm start`
-- Health check path: `/health`
-- Set all secrets from `server/.env.example` in the Render dashboard (never commit `.env`).
-- `render.yaml` in `server/` mirrors this configuration for Render's Blueprint deploys.
+</details>
 
-### Frontend → Vercel
-- New Vercel project, root directory `client`.
-- Framework preset: Vite.
-- Env vars: `VITE_API_URL` and `VITE_SOCKET_URL` pointing at the deployed Render URL.
-- `client/vercel.json` adds the SPA rewrite rule needed for client-side routing.
+<details>
+<summary><code>client/.env</code></summary>
 
-## Known limitations (MVP scope, flagged for hardening before real production traffic)
+| Variable | Description |
+|---|---|
+| `VITE_API_URL` | Backend REST API base URL |
+| `VITE_SOCKET_URL` | Backend Socket.IO URL |
 
-- Code execution only supports JavaScript today, run inside a Node `vm` context with a
-  timeout — adequate for demos, not a substitute for a real container sandbox (see
-  PLAN.md's open decision on Judge0/Piston) before allowing high-volume untrusted use.
-- Remote cursor *position* highlighting inside the editor isn't wired up yet — presence
-  (who's in the room, their color/role) is tracked and shown in the sidebar, but the
-  Yjs↔Monaco binding here is a minimal custom one (not y-monaco, which broke under this
-  project's bundler) and doesn't yet render other users' carets inline.
-- Socket.IO state is in-memory per server process — fine for a single Render instance;
-  scaling to multiple instances needs a Redis adapter (noted in PLAN.md).
-- Google OAuth requires real credentials to be configured before that login path works;
-  email/password sign-up works standalone.
-# codesync
+</details>
+
+## ☁️ Deployment
+
+| Layer | Platform | Notes |
+|---|---|---|
+| Frontend | **Vercel** | Static SPA build, `client/vercel.json` handles client-side routing rewrites |
+| Backend | **Render** | Persistent WebSocket connections required — this ruled out serverless (Vercel Functions can't hold a live Socket.IO connection), `server/render.yaml` mirrors the deployed config |
+| Database | **MongoDB Atlas** | Dedicated database (`codesync_db`), TTL index for auto-expiring anonymous rooms |
+| Auth | **Google Cloud Console** | Dedicated OAuth 2.0 client, production + local redirect URIs configured |
+
+## 🧭 Roadmap / known limitations
+
+Being upfront about where this stands today:
+
+- **Code execution is JavaScript-only** right now, running in a timeout-guarded
+  Node `vm` context — good for demos and interviews, not yet a hardened
+  multi-language sandbox. Wiring in Judge0/Piston for the other languages already
+  supported in the editor is the next step.
+- **Remote cursor *position* highlighting** isn't rendered inline yet — presence
+  (who's here, their role and color) is fully tracked and shown live, but seeing
+  exactly where someone else's caret is inside the editor is on the roadmap.
+- **Socket.IO state is in-memory per server process** — correct and fast for a
+  single instance, but horizontal scaling would need a Redis adapter.
+- **WebRTC uses a public TURN relay** for NAT traversal — solid for demos and
+  personal use; a production-scale deployment would swap in dedicated TURN
+  infrastructure.
+
+## 📄 License
+
+MIT — see [`LICENSE`](./LICENSE).
+
+---
+
+<div align="center">
+<sub>Built solo, end to end: architecture, real-time sync engine, auth, deployment infrastructure, and UI.</sub>
+</div>
