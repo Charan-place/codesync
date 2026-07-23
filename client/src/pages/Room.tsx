@@ -27,7 +27,24 @@ export default function Room() {
 
   const [output, setOutput] = useState<{ stdout: string; stderr: string } | null>(null);
   const [running, setRunning] = useState(false);
+  const [language, setLanguage] = useState('javascript');
   const bindingRef = useRef<YjsMonacoBinding | null>(null);
+
+  // Only JavaScript actually executes right now (see server/executeController.ts).
+  // Other languages still get real syntax highlighting in the editor, but Run
+  // is disabled for them so it's obvious why nothing happens instead of
+  // silently trying to run Python/etc. as JavaScript.
+  const RUNNABLE_LANGUAGES = new Set(['javascript']);
+  const LANGUAGE_OPTIONS = [
+    { value: 'javascript', label: 'JavaScript' },
+    { value: 'typescript', label: 'TypeScript' },
+    { value: 'python', label: 'Python' },
+    { value: 'java', label: 'Java' },
+    { value: 'cpp', label: 'C++' },
+    { value: 'go', label: 'Go' },
+    { value: 'rust', label: 'Rust' },
+    { value: 'plaintext', label: 'Plain text' },
+  ];
 
   useEffect(() => {
     getRoom(slug)
@@ -62,11 +79,19 @@ export default function Room() {
   }, []);
 
   async function handleRun() {
+    if (!RUNNABLE_LANGUAGES.has(language)) {
+      setOutput({
+        stdout: '',
+        stderr: `Running "${language}" isn't supported yet — only JavaScript executes right now. ` +
+          'Switch the language dropdown to JavaScript to use Run.',
+      });
+      return;
+    }
     setRunning(true);
     setOutput(null);
     try {
       const code = doc.getText('monaco').toString();
-      const result = await executeCode(slug, 'javascript', code);
+      const result = await executeCode(slug, language, code);
       setOutput(result);
     } catch (err: any) {
       setOutput({ stdout: '', stderr: err.response?.data?.error || 'Execution failed' });
@@ -111,20 +136,35 @@ export default function Room() {
             {connected ? 'Connected' : 'Reconnecting…'}
           </span>
         </div>
-        <button
-          onClick={handleRun}
-          disabled={running}
-          className="text-sm rounded-md bg-brand-600 px-3 py-1.5 hover:bg-brand-700 disabled:opacity-60"
-        >
-          {running ? 'Running…' : '▶ Run'}
-        </button>
+        <div className="flex items-center gap-2">
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="text-sm rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-600"
+          >
+            {LANGUAGE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+                {!RUNNABLE_LANGUAGES.has(opt.value) ? ' (view only)' : ''}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleRun}
+            disabled={running}
+            title={!RUNNABLE_LANGUAGES.has(language) ? 'Only JavaScript can be executed right now' : undefined}
+            className="text-sm rounded-md bg-brand-600 px-3 py-1.5 hover:bg-brand-700 disabled:opacity-60"
+          >
+            {running ? 'Running…' : '▶ Run'}
+          </button>
+        </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 flex flex-col min-w-0">
           <Editor
             height="100%"
-            defaultLanguage="javascript"
+            language={language}
             theme="vs-dark"
             options={{ readOnly: !isEditable, minimap: { enabled: false }, fontSize: 14 }}
             onMount={handleMount}
