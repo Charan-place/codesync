@@ -82,7 +82,7 @@ export default function Home() {
             </Button>
           ) : (
             <>
-              <button onClick={() => navigate('/login')} className="text-slate-300 hover:text-white transition-colors px-2">
+              <button type="button" onClick={() => navigate('/login')} className="text-slate-300 hover:text-white transition-colors px-2">
                 Log in
               </button>
               <Button size="sm" onClick={() => navigate('/signup')}>

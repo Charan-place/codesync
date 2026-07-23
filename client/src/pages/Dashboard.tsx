@@ -53,6 +53,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-4 text-sm">
           <span className="hidden sm:inline text-slate-400">{user?.email}</span>
           <button
+            type="button"
             onClick={() => {
               logout();
               toast.success('Logged out.');

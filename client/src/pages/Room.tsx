@@ -86,7 +86,7 @@ export default function Room() {
 
   async function handleCopyLink() {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(globalThis.location.href);
       toast.success('Room link copied to clipboard!');
     } catch {
       toast.error('Could not copy link.');
