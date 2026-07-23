@@ -21,6 +21,8 @@ pair programming, and teaching. No install, no setup, just a link.
 ![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?style=flat&logo=vercel&logoColor=white)
 ![Render](https://img.shields.io/badge/Deployed_on-Render-46E3B7?style=flat&logo=render&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+[![CI](https://github.com/Charan-place/codesync/actions/workflows/ci.yml/badge.svg)](https://github.com/Charan-place/codesync/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Charan-place/codesync/actions/workflows/codeql.yml/badge.svg)](https://github.com/Charan-place/codesync/actions/workflows/codeql.yml)
 
 </div>
 
@@ -182,6 +184,26 @@ presence, chat, and video calling in action.
 | Backend | **Render** | Persistent WebSocket connections required — this ruled out serverless (Vercel Functions can't hold a live Socket.IO connection), `server/render.yaml` mirrors the deployed config |
 | Database | **MongoDB Atlas** | Dedicated database (`codesync_db`), TTL index for auto-expiring anonymous rooms |
 | Auth | **Google Cloud Console** | Dedicated OAuth 2.0 client, production + local redirect URIs configured |
+
+## ✅ Continuous Integration
+
+Every push and pull request against `main`/`develop` runs through
+[`ci.yml`](.github/workflows/ci.yml) — entirely on GitHub's free Actions tier:
+
+| Check | What it catches |
+|---|---|
+| `deno lint` | Fast whole-repo static analysis (unused code, `any` usage, unsafe patterns) |
+| `oxlint` (client + server) | Framework-aware linting — React hooks rules, etc. |
+| `tsc --noEmit` (server) | Server type errors before they ship |
+| `tsc -b && vite build` (client) | The exact production build Vercel runs — a PR can't merge with a broken build |
+| `npm run build` (server) | Confirms the server compiles to `dist/` the way Render's build step expects |
+| `npm audit` | Dependency vulnerability report (informational, doesn't block merge) |
+| [CodeQL](.github/workflows/codeql.yml) | GitHub's native security scanner — injection, unsafe regex, hardcoded secrets, etc. |
+| [Dependabot](.github/dependabot.yml) | Weekly automated PRs for outdated/vulnerable dependencies, run through the same checks above |
+
+To actually enforce these on `main`, turn on **Settings → Branches → Branch
+protection rule** for `main` and require the `CI` and `CodeQL` status checks
+(plus, optionally, at least one review) before a PR can merge.
 
 ## 🧭 Roadmap / known limitations
 

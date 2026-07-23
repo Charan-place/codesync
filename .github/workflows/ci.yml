@@ -1,0 +1,129 @@
+name: CI
+
+# Runs on every PR and every push to main/develop. Add all of these jobs as
+# required status checks in Settings → Branches → Branch protection rules so
+# a PR literally cannot be merged unless the app actually still builds.
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast syntax/style pass across the whole repo before spending time on
+  # slower install + build jobs.
+  deno-lint:
+    name: Lint (deno lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno lint
+
+  lint-server:
+    name: Lint — server (oxlint)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+
+  lint-client:
+    name: Lint — client (oxlint)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+
+  typecheck-server:
+    name: Typecheck — server
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+
+  build-server:
+    name: Build — server
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  build-client:
+    name: Typecheck + Build — client
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      # `npm run build` is `tsc -b && vite build` — covers type-checking and
+      # a real production bundle in one step, exactly like what Vercel runs.
+      - run: npm run build
+
+  # Informational only (continue-on-error) — transitive-dependency advisories
+  # are common and often outside your control, so this shouldn't block a PR
+  # on its own. It still shows up clearly in the PR checks list to review.
+  audit:
+    name: Dependency audit (informational)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      matrix:
+        workspace: [client, server]
+    defaults:
+      run:
+        working-directory: ${{ matrix.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm audit --audit-level=high

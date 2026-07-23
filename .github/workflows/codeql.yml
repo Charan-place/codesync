@@ -1,0 +1,32 @@
+name: CodeQL
+
+# GitHub's own static-analysis security scanner — free for public repos, no
+# third-party account needed. Flags real vulnerability patterns (injection,
+# unsafe regex, hardcoded secrets, etc.), not just style issues.
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: "23 7 * * 1" # weekly, catches newly-published advisories
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze (JavaScript/TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
