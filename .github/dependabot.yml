@@ -5,6 +5,7 @@ updates:
   # `ci.yml` checks as any human-authored PR before you'd ever merge one.
   - package-ecosystem: "npm"
     directory: "/server"
+    target-branch: "develop"
     schedule:
       interval: "weekly"
     groups:
@@ -15,6 +16,7 @@ updates:
 
   - package-ecosystem: "npm"
     directory: "/client"
+    target-branch: "develop"
     schedule:
       interval: "weekly"
     groups:
@@ -25,5 +27,6 @@ updates:
 
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "develop"
     schedule:
       interval: "weekly"
