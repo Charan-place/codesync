@@ -1,6 +1,8 @@
 <div align="center">
 
-# ⚡ CodeSync
+<img src="./client/public/favicon.svg" width="56" height="56" alt="CodeSync logo" /><br />
+
+# CodeSync
 
 **Share code in real-time, without the friction.**
 
