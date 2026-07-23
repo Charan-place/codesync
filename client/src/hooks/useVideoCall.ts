@@ -3,6 +3,23 @@ import { useEffect, useRef, useState } from 'react';
 import Peer from 'simple-peer';
 import { Socket } from 'socket.io-client';
 
+// STUN alone only works when at least one side has a directly reachable
+// (non-symmetric-NAT) connection. On most real-world networks (home wifi,
+// mobile data, corporate NAT) two browsers can't reach each other directly,
+// so a TURN relay is required or the peer connection just hangs forever —
+// which looks exactly like "I can see myself but not the other person."
+// Open Relay Project (metered.ca) provides a free public TURN server.
+const ICE_SERVERS: RTCIceServer[] = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  {
+    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+];
+
 export function useVideoCall(socket: Socket | null, slug: string, inCall: boolean) {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({});
@@ -25,7 +42,7 @@ export function useVideoCall(socket: Socket | null, slug: string, inCall: boolea
     }
 
     function createPeer(targetSocketId: string, initiator: boolean) {
-      const peer = new Peer({ initiator, trickle: true, stream });
+      const peer = new Peer({ initiator, trickle: true, stream, config: { iceServers: ICE_SERVERS } });
       peer.on('signal', (signal: unknown) => socket!.emit('webrtc:signal', { slug, targetSocketId, signal }));
       peer.on('stream', (remoteStream: MediaStream) =>
         setRemoteStreams((prev) => ({ ...prev, [targetSocketId]: remoteStream }))
